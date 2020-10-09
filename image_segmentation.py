@@ -11,10 +11,146 @@ author: liusili
 import os
 import cv2
 import numpy as np
+from collections import namedtuple
+import xml.etree.ElementTree as ET
+from xml.dom.minidom import Document
 
 
-def preprocess(img_path):
-    img = cv2.imread(img_path, 0)
+def generate_xml(image_info, tag_list, out_dir=None):
+    """
+    :param out_dir:
+    :info: 输出xml文件
+    :param image_info:
+    :param tag_list:
+    :return:
+    """
+    img_name = image_info['file_name']
+    img_h = str(image_info['height'])
+    img_w = str(image_info['width'])
+    img_path = image_info['path']
+
+    folder = img_path.split('\\')[-2]
+
+    doc = Document()
+    orderpack = doc.createElement("annotation")
+    doc.appendChild(orderpack)
+
+    objectfolder = doc.createElement("folder")
+    objectcontenttext = doc.createTextNode(folder)
+    objectfolder.appendChild(objectcontenttext)
+    orderpack.appendChild(objectfolder)
+
+    objectfilename = doc.createElement("filename")
+    objectcontenttext = doc.createTextNode(img_name)
+    objectfilename.appendChild(objectcontenttext)
+    orderpack.appendChild(objectfilename)
+
+    objectpath = doc.createElement("path")
+    objectcontenttext = doc.createTextNode(img_path)
+    objectpath.appendChild(objectcontenttext)
+    orderpack.appendChild(objectpath)
+
+    objectsource = doc.createElement("source")
+    orderpack.appendChild(objectsource)
+
+    objectdatabase = doc.createElement("database")
+    objectdatabasetext = doc.createTextNode('Unknown')
+    objectdatabase.appendChild(objectdatabasetext)
+    objectsource.appendChild(objectdatabase)
+
+    objectsize = doc.createElement("size")
+    orderpack.appendChild(objectsize)
+
+    objectwidth = doc.createElement("width")
+    objectwidthtext = doc.createTextNode(img_w)
+    objectwidth.appendChild(objectwidthtext)
+    objectsize.appendChild(objectwidth)
+
+    objectheight = doc.createElement("height")
+    objectheighttext = doc.createTextNode(img_h)
+    objectheight.appendChild(objectheighttext)
+    objectsize.appendChild(objectheight)
+
+    objectdepth = doc.createElement("depth")
+    objectdepthtext = doc.createTextNode('3')
+    objectdepth.appendChild(objectdepthtext)
+    objectsize.appendChild(objectdepth)
+
+    objectcontent = doc.createElement("segmented")
+    objectcontenttext = doc.createTextNode('0')
+    objectcontent.appendChild(objectcontenttext)
+    orderpack.appendChild(objectcontent)
+
+    for tag in tag_list:
+        bbox = tag.bbox
+        category = tag.name
+        xmin = bbox[0]
+        ymin = bbox[1]
+        xmax = bbox[2]
+        ymax = bbox[3]
+
+        xmin = str(int(xmin))
+        ymin = str(int(ymin))
+        xmax = str(int(xmax))
+        ymax = str(int(ymax))
+
+        objectobject = doc.createElement("object")
+        orderpack.appendChild(objectobject)
+
+        objectname = doc.createElement("name")
+        objectcontenttext = doc.createTextNode(str(category))
+        objectname.appendChild(objectcontenttext)
+        objectobject.appendChild(objectname)
+
+        objectpose = doc.createElement("pose")
+        objectcontenttext = doc.createTextNode('Unspecified')
+        objectpose.appendChild(objectcontenttext)
+        objectobject.appendChild(objectpose)
+
+        objecttruncated = doc.createElement("truncated")
+        objectcontenttext = doc.createTextNode('0')
+        objecttruncated.appendChild(objectcontenttext)
+        objectobject.appendChild(objecttruncated)
+
+        objectdifficult = doc.createElement("difficult")
+        objectcontenttext = doc.createTextNode('0')
+        objectdifficult.appendChild(objectcontenttext)
+        objectobject.appendChild(objectdifficult)
+
+        objectbndbox = doc.createElement("bndbox")
+        objectobject.appendChild(objectbndbox)
+
+        objectxmin = doc.createElement("xmin")
+        objectcontenttext = doc.createTextNode(xmin)
+        objectxmin.appendChild(objectcontenttext)
+        objectbndbox.appendChild(objectxmin)
+
+        objectymin = doc.createElement("ymin")
+        objectcontenttext = doc.createTextNode(ymin)
+        objectymin.appendChild(objectcontenttext)
+        objectbndbox.appendChild(objectymin)
+
+        objectxmax = doc.createElement("xmax")
+        objectcontenttext = doc.createTextNode(xmax)
+        objectxmax.appendChild(objectcontenttext)
+        objectbndbox.appendChild(objectxmax)
+
+        objectymax = doc.createElement("ymax")
+        objectcontenttext = doc.createTextNode(ymax)
+        objectymax.appendChild(objectcontenttext)
+        objectbndbox.appendChild(objectymax)
+
+    if not out_dir:
+        xml_file = os.path.splitext(img_path)[0] + '.xml'
+    else:
+        xml_file = os.path.join(out_dir, os.path.splitext(img_name)[0] + '.xml')
+    f = open(xml_file, 'w')
+    doc.writexml(f, indent='\t', newl='\n', addindent='\t', encoding='utf-8')
+    f.close()
+
+
+def preprocess(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
     img = np.array(img, dtype='uint8')
     img = cv2.threshold(img, 10, 255, cv2.THRESH_BINARY)[1]
@@ -71,10 +207,10 @@ def get_standard_section(bbox_lst, s_width, s_height):
 def get_first_section(section_lst, s_width):
     base = min(list(map(lambda x: x[0], section_lst)))
     tmp = list(filter(lambda x: x[0] < base+0.5*s_width, section_lst))
-    return min(tmp,key=lambda x: x[1])
+    return min(tmp, key=lambda x: x[1])
 
 
-def find_period(section_lst,s_height, s_width):
+def find_period(section_lst, s_height, s_width):
     x_lst = [x[0] for x in section_lst]
     y_lst = [x[1] for x in section_lst]
     x_lst = sorted(x_lst)
@@ -124,3 +260,118 @@ def recover_section(first_section, section_lst, width, height,
         x = start_x
         y += period_y
     return recover_lst
+
+
+def get_tags_from_xml(xml_path):
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
+    Tag = namedtuple('Tag', ['bbox', 'name'])
+    out_lst = []
+    for obj in root.findall('object'):
+        cat = obj.find('name').text
+        bbox = obj.find('bndbox')
+        xmin = int(bbox.find('xmin').text)
+        ymin = int(bbox.find('ymin').text)
+        xmax = int(bbox.find('xmax').text)
+        ymax = int(bbox.find('ymax').text)
+        tag = Tag([xmin, ymin, xmax, ymax], cat)
+        out_lst.append(tag)
+    return out_lst
+
+
+def get_intersection(bbox1, bbox2):
+    xmin = max(bbox1[0], bbox2[0])
+    ymin = max(bbox1[1], bbox2[1])
+    xmax = min(bbox1[2], bbox2[2])
+    ymax = min(bbox1[3], bbox2[3])
+    if xmin >= xmax or ymin >= ymax:
+        return None
+    else:
+        return [xmin, ymin, xmax, ymax]
+
+
+def update_bbox(section_lst, tags_lst):
+    out_lst = []
+    Tag = namedtuple('Tag', ['bbox', 'name'])
+    for section in section_lst:
+        new_tag_lst = []
+        x = section[0]
+        y = section[1]
+        for tag in tags_lst:
+            bbox = tag.bbox
+            inter = get_intersection(section, bbox)
+            if inter:
+                cat = tag.name
+                new_bbox = [inter[0]-x, inter[1]-y, inter[2]-x, inter[3]-y]
+                new_tag = Tag(new_bbox, cat)
+                new_tag_lst.append(new_tag)
+        out_lst.append(new_tag_lst)
+    return out_lst
+
+
+def image_segmentation(img):
+    """
+    对点灯机图片进行切分，以及对于缺失部分区域进行恢复
+    :param img:
+    :return: 所有分割区域的坐标信息以及恢复区域的坐标信息 List[xmin, ymin, xmax, ymax]
+    """
+    height, width = img.shape
+    out_lst = get_contours(img)
+    s_width, s_height = get_standard_scale(out_lst)
+    section_lst = get_standard_section(out_lst, s_width, s_height)
+    period_x, period_y = find_period(section_lst, s_height, s_width)
+    first_section = get_first_section(section_lst, s_width)
+    recover_lst = recover_section(first_section, section_lst, width, height,
+                                  s_height, s_width, period_x, period_y)
+    return section_lst, recover_lst
+
+
+def data_segmentation(img_path, xml_path, file_name, out_path):
+    img_raw = cv2.imread(img_path)
+    img = preprocess(img_raw)
+    section_lst, recover_lst = image_segmentation(img)
+    tags_lst = get_tags_from_xml(xml_path)
+    section_tags = update_bbox(section_lst, tags_lst)
+    recover_tags = update_bbox(recover_lst, tags_lst)
+
+    # 保存路径
+    normal_path = os.path.join(out_path, 'normal')
+    recover_path = os.path.join(out_path, 'abnormal')
+    os.makedirs(normal_path, exist_ok=True)
+    os.makedirs(recover_path, exist_ok=True)
+
+    ind = 1
+    for i, tag_lst in enumerate(section_tags):
+        img_name = file_name + '_{}.jpg'.format(ind)
+        img_path = os.path.join(normal_path, img_name)
+
+        section = section_lst[i]
+        sec = img_raw[section[1]:section[3], section[0]:section[2], :]
+        cv2.imwrite(img_path, sec)
+        ind += 1
+        if tag_lst:
+            h, w, _ = sec.shape
+            image_info = {'file_name': img_name, 'path': img_path, 'height': h, 'width': w}
+            generate_xml(image_info, tag_lst)
+
+    for i, tag_lst in enumerate(recover_tags):
+        img_name = file_name + '_{}.jpg'.format(ind)
+        img_path = os.path.join(recover_path, img_name)
+
+        section = recover_lst[i]
+        sec = img_raw[section[1]:section[3], section[0]:section[2], :]
+        cv2.imwrite(img_path, sec)
+        ind += 1
+        if tag_lst:
+            h, w, _ = sec.shape
+            image_info = {'file_name': img_name, 'path': img_path, 'height': h, 'width': w}
+            generate_xml(image_info, tag_lst)
+
+
+if __name__ == '__main__':
+    out_path = r'C:\Users\OPzealot\Desktop\LIGHTER'
+    img_path = r'C:\Users\OPzealot\Desktop\LIGHTER\1.jpg'
+    xml_path = r'C:\Users\OPzealot\Desktop\LIGHTER\1.xml'
+    file_name = '1'
+    data_segmentation(img_path, xml_path, file_name, out_path)
+    print('finish')
