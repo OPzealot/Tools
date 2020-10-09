@@ -337,35 +337,41 @@ def data_segmentation(img_path, xml_path, file_name, out_path):
     # 保存路径
     normal_path = os.path.join(out_path, 'normal')
     recover_path = os.path.join(out_path, 'abnormal')
+    tag_path = os.path.join(out_path, 'tag')
     os.makedirs(normal_path, exist_ok=True)
     os.makedirs(recover_path, exist_ok=True)
+    os.makedirs(tag_path, exist_ok=True)
 
     ind = 1
     for i, tag_lst in enumerate(section_tags):
         img_name = file_name + '_{}.jpg'.format(ind)
-        img_path = os.path.join(normal_path, img_name)
-
         section = section_lst[i]
         sec = img_raw[section[1]:section[3], section[0]:section[2], :]
-        cv2.imwrite(img_path, sec)
         ind += 1
         if tag_lst:
+            file_path = os.path.join(tag_path, img_name)
             h, w, _ = sec.shape
-            image_info = {'file_name': img_name, 'path': img_path, 'height': h, 'width': w}
+            image_info = {'file_name': img_name, 'path': file_path, 'height': h, 'width': w}
             generate_xml(image_info, tag_lst)
+        else:
+            file_path = os.path.join(normal_path, img_name)
+        cv2.imwrite(file_path, sec)
 
     for i, tag_lst in enumerate(recover_tags):
         img_name = file_name + '_{}.jpg'.format(ind)
-        img_path = os.path.join(recover_path, img_name)
-
         section = recover_lst[i]
         sec = img_raw[section[1]:section[3], section[0]:section[2], :]
-        cv2.imwrite(img_path, sec)
+
         ind += 1
         if tag_lst:
+            file_path = os.path.join(tag_path, img_name)
             h, w, _ = sec.shape
-            image_info = {'file_name': img_name, 'path': img_path, 'height': h, 'width': w}
+            image_info = {'file_name': img_name, 'path': file_path, 'height': h, 'width': w}
             generate_xml(image_info, tag_lst)
+        else:
+            file_path = os.path.join(recover_path, img_name)
+        cv2.imwrite(file_path, sec)
+
 
 
 if __name__ == '__main__':
