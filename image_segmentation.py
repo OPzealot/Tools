@@ -9,8 +9,10 @@ author: liusili
 @desc: 
 """
 import os
+import sys
 import cv2
 import numpy as np
+from tqdm import tqdm
 from collections import namedtuple
 import xml.etree.ElementTree as ET
 from xml.dom.minidom import Document
@@ -164,7 +166,7 @@ def get_contours(img):
     for c in contours:
         bbox = cv2.boundingRect(c)
         area = bbox[2] * bbox[3]
-        if area < 1000:
+        if area < 1000000:
             continue
         area_lst.append(area)
         bbox_lst.append(bbox)
@@ -326,18 +328,23 @@ def image_segmentation(img):
     return section_lst, recover_lst
 
 
-def data_segmentation(img_path, xml_path, file_name, out_path):
+def data_segmentation(img_path, out_path):
     img_raw = cv2.imread(img_path)
     img = preprocess(img_raw)
     section_lst, recover_lst = image_segmentation(img)
-    tags_lst = get_tags_from_xml(xml_path)
+    xml_path = os.path.splitext(img_path)[0] + '.xml'
+    if os.path.isfile(xml_path):
+        tags_lst = get_tags_from_xml(xml_path)
+    else:
+        tags_lst = []
     section_tags = update_bbox(section_lst, tags_lst)
     recover_tags = update_bbox(recover_lst, tags_lst)
 
     # 保存路径
-    normal_path = os.path.join(out_path, 'normal')
-    recover_path = os.path.join(out_path, 'abnormal')
-    tag_path = os.path.join(out_path, 'tag')
+    file_name = os.path.splitext(img_path.split('\\')[-1])[0]
+    normal_path = out_path + '_normal'
+    recover_path = out_path + '_abnormal'
+    tag_path = out_path + '_tag'
     os.makedirs(normal_path, exist_ok=True)
     os.makedirs(recover_path, exist_ok=True)
     os.makedirs(tag_path, exist_ok=True)
@@ -373,11 +380,30 @@ def data_segmentation(img_path, xml_path, file_name, out_path):
         cv2.imwrite(file_path, sec)
 
 
+def main(sample_root, img_format='.jpg'):
+    img_path_lst = []
+    for root, _, file_lst in os.walk(sample_root):
+        for file in file_lst:
+            if os.path.splitext(file)[-1] == img_format:
+                path = os.path.join(root, file)
+                img_path_lst.append(path)
+
+    try:
+        with tqdm(img_path_lst, file=sys.stdout) as pbar:
+            for img_path in pbar:
+                tqdm.write('[SEGMENT] Image: {}'.format(img_path))
+                data_segmentation(img_path, sample_root)
+                pbar.set_description('Processing image:')
+    except KeyboardInterrupt:
+        pbar.close()
+        raise 
+    pbar.close()
+
 
 if __name__ == '__main__':
-    out_path = r'C:\Users\OPzealot\Desktop\LIGHTER'
-    img_path = r'C:\Users\OPzealot\Desktop\LIGHTER\1.jpg'
-    xml_path = r'C:\Users\OPzealot\Desktop\LIGHTER\1.xml'
-    file_name = '1'
-    data_segmentation(img_path, xml_path, file_name, out_path)
-    print('finish')
+    # img_path = r'C:\Users\OPzealot\Desktop\LIGHTER\4.jpg'
+    # out_path = r'C:\Users\OPzealot\Desktop\LIGHTER'
+    # data_segmentation(img_path, out_path)
+
+    sample_root_ = r'E:\Working\Visionox\V2_lighter\data\lighter_raw'
+    main(sample_root_)

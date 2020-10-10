@@ -50,7 +50,7 @@ def rename_images(sample_root, img_name, img_format=('.jpg', '.JPG'), digit=4):
 
 
 if __name__ == '__main__':
-    sample_root = r'D:\Working\Tianma\16902\data\0800\ADD_0825\0825'
-    img_name = '16902'
+    sample_root = r'E:\Working\Visionox\V2_lighter\data\lighter_raw'
+    img_name = 'lighter'
     # convert_img_format(sample_root)
-    rename_images(sample_root, img_name, digit=4)
+    rename_images(sample_root, img_name, digit=3)
