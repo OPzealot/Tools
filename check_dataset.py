@@ -10,13 +10,14 @@ author: liusili
 """
 import cv2
 import os
+import sys
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
 
 
 def check_valid_image(sample_root, img_format='.jpg'):
     for root, _, file_lst in os.walk(sample_root):
-        pbar = tqdm(file_lst)
+        pbar = tqdm(file_lst, file=sys.stdout)
         for file in pbar:
             if os.path.splitext(file)[-1] == img_format:
                 category = root.split('\\')[-1]
@@ -49,7 +50,7 @@ def get_and_check(root, name, length):
 
 def find_label(sample_root, label, replace=None):
     for rootPath, _, file_lst in os.walk(sample_root):
-        pbar = tqdm(file_lst)
+        pbar = tqdm(file_lst, file=sys.stdout)
         for file in pbar:
             if os.path.splitext(file)[-1] == '.xml':
                 category = rootPath.split('\\')[-1]
@@ -69,5 +70,5 @@ def find_label(sample_root, label, replace=None):
 
 
 if __name__ == '__main__':
-    sample_root = r'D:\Working\Tianma\16902\data\09\16902_0914'
-    find_label(sample_root, label='AZ15')
+    sample_root = r"E:\Working\Visionox\V2_lighter\data\11\lighter_1105"
+    find_label(sample_root, 'DMSM1_K1', replace='DMSM1')

@@ -28,5 +28,5 @@ def export_category_from_json(json_path):
 
 
 if __name__ == '__main__':
-    src_path = r'D:\Working\Tianma\16902\work_dir\20200916_all\test.json'
+    src_path = r"E:\Working\Visionox\V2_lighter\work_dir\20201110_thr\test.json"
     export_category_from_json(src_path)

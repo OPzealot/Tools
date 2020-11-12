@@ -29,7 +29,8 @@ def convert_img_format(sample_root, img_format=None, tar_format='.jpg'):
 def rename_images(sample_root, img_name, img_format=('.jpg', '.JPG'), digit=4):
     i = 1
     now = datetime.now()
-    date = '{:0>2d}{:0>2d}'.format(now.month, now.day)
+    # date = '{:0>2d}{:0>2d}'.format(now.month, now.day)
+    date = '{:0>2d}{:0>2d}'.format(11, 6)
 
     for root, _, file_lst in os.walk(sample_root):
         for file in file_lst:
@@ -50,7 +51,7 @@ def rename_images(sample_root, img_name, img_format=('.jpg', '.JPG'), digit=4):
 
 
 if __name__ == '__main__':
-    sample_root = r'E:\Working\Visionox\V2_lighter\data\lighter_raw'
+    sample_root = r"E:\Working\Visionox\V2_lighter\data\11\1106\1106_raw"
     img_name = 'lighter'
     # convert_img_format(sample_root)
-    rename_images(sample_root, img_name, digit=3)
+    rename_images(sample_root, img_name, digit=2)

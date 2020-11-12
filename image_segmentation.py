@@ -405,5 +405,5 @@ if __name__ == '__main__':
     # out_path = r'C:\Users\OPzealot\Desktop\LIGHTER'
     # data_segmentation(img_path, out_path)
 
-    sample_root_ = r'E:\Working\Visionox\V2_lighter\data\lighter_raw'
+    sample_root_ = r'E:\Working\Visionox\V2_lighter\data\11\1106\1106_raw'
     main(sample_root_)

@@ -18,6 +18,7 @@ def file2list(file_path):
             cat_lst.append(category)
     print(cat_lst)
 
+
 if __name__ == '__main__':
     file_path = r'D:\Working\Tianma\54902\deploy\classes.txt'
     file2list(file_path)
