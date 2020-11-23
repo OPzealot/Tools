@@ -87,7 +87,19 @@ def add_bbox_info(tree, category, bbox_lst):
     return tree
 
 
-def tag_normal_bbox(img_path, category='normal'):
+def threshold_by_color(img):
+    """
+    默认将绿色部分分离出来，return mask
+    :param img:
+    :return:
+    """
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    lower_green = np.array([35, 43, 46])
+    upper_green = np.array([80, 255, 255])
+    return cv2.inRange(hsv, lower_green, upper_green)
+
+
+def tag_normal_bbox(img_path, category='normal', mode='green'):
     addition = False
     img_raw = cv2.imread(img_path)
     height = img_raw.shape[0]
@@ -100,7 +112,11 @@ def tag_normal_bbox(img_path, category='normal'):
 
     img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
     img = np.array(img, dtype='uint8')
-    img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    
+    if mode == 'green':
+        mask = threshold_by_color(img)
+    else:
+        mask = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
     if os.path.isfile(xml_path):
         addition = True
@@ -113,12 +129,12 @@ def tag_normal_bbox(img_path, category='normal'):
             xmax = int(get_and_check(bbox, 'xmax', 1).text)
             ymax = int(get_and_check(bbox, 'ymax', 1).text)
 
-            img[ymin:ymax, xmin:xmax] = 0
+            mask[ymin:ymax, xmin:xmax] = 0
 
     kernel = np.ones((3, 3), np.uint8)
-    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations=1)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=1)
 
-    contours, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     area_lst = []
     bbox_lst = []
@@ -169,5 +185,5 @@ def main(root_path, category):
 
 
 if __name__ == '__main__':
-    root_path = r'D:\Working\Tianma\Mask-FMM\data\0800\ADD_0819\0821'
+    root_path = r'C:\Users\OPzealot\Desktop\fmm2'
     main(root_path, 'normal')
