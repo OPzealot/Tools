@@ -14,6 +14,53 @@ import numpy as np
 import os
 
 
+def combine_table(table_1, table_2, table_3, out_path):
+    df_1 = pd.read_excel(table_1, sheet_name='code')
+    df_2 = pd.read_excel(table_2, sheet_name='code')
+    df_3 = pd.read_excel(table_3, sheet_name='code')
+
+    columns = ['glass_id', 'panel_id', 'category', 'score']
+    out_df = pd.DataFrame(columns=columns)
+    id = 0
+
+    for row in df_1.itertuples():
+        image_name = getattr(row, 'image_name')
+        glass = image_name.split('.')[0]
+
+        panel = getattr(row, 'panel_id')
+        infer = getattr(row, 'category')
+        score = getattr(row, 'score')
+
+        id += 1
+        out_df.loc[id] = [glass, panel, infer, score]
+
+    for row in df_2.itertuples():
+        image_name = getattr(row, 'image_name')
+        glass = image_name.split('.')[0]
+
+        panel = getattr(row, 'panel_id')
+        infer = getattr(row, 'category')
+        score = getattr(row, 'score')
+
+        id += 1
+        out_df.loc[id] = [glass, panel, infer, score]
+
+    for row in df_3.itertuples():
+        image_name = getattr(row, 'image_name')
+        glass = image_name.split('_')[0]
+
+        panel = getattr(row, 'panel_id')
+        infer = getattr(row, 'category')
+        score = getattr(row, 'score')
+
+        id += 1
+        out_df.loc[id] = [glass, panel, infer, score]
+
+    out_df.to_excel(out_path, sheet_name='results')
+    print('[FINISH] Table Combination.')
+
+
+
 def merge_excel(category, root_path, out_path):
     """
     :info: 默认是将‘0’类判断为预测正确
@@ -60,8 +107,8 @@ def merge_excel(category, root_path, out_path):
 
 
 if __name__ == '__main__':
-    category = ['0', 'AZ07', 'AZ10', 'AZ12', 'AZ15', 'BL01', 'Branch', 'Bubble',\
-                'Fibre', 'Gel', 'Gel_01', 'PI01', 'PI02']
-    root_path = r'D:\Working\Tianma\1x1A4\OIC\0327\111A4'
-    out_path = r'D:\Working\Tianma\1x1A4\OIC\0327\111A4_OIC.xlsx'
-    merge_excel(category, root_path, out_path)
+    table_1 = r"E:\Working\Visionox\V2_lighter\file\POC_report\DemoReport\test_1126\2CEE01_results.xlsx"
+    table_2 = r"E:\Working\Visionox\V2_lighter\file\POC_report\DemoReport\test_1126\2CIL01_results.xlsx"
+    table_3 = r"E:\Working\Visionox\V2_lighter\file\POC_report\DemoReport\test_1126\Mapping_results.xlsx"
+    out_path = r"E:\Working\Visionox\V2_lighter\file\POC_report\DemoReport\test_1126\results.xlsx"
+    combine_table(table_1, table_2, table_3, out_path)

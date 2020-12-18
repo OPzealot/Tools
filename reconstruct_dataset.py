@@ -77,5 +77,5 @@ if __name__ == '__main__':
     # out_path = r'D:\Working\Tianma\13902\TEST\0608\test_3\out_1'
     # extract_wrong_data(root_path, out_path, "STR01")
 
-    sample_root = r"D:\Working\Tianma\13902\data\09\13902_0930_add"
+    sample_root = r"D:\Working\Tianma\13902\data\11\13902_FALSE"
     reconstruct_dataset(sample_root)

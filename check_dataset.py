@@ -70,5 +70,5 @@ def find_label(sample_root, label, replace=None):
 
 
 if __name__ == '__main__':
-    sample_root = r"E:\Working\Visionox\V2_lighter\data\11\lighter_1105"
-    find_label(sample_root, 'DMSM1_K1', replace='DMSM1')
+    sample_root = r"D:\Working\Tianma\54902\data\1216"
+    check_valid_image(sample_root)

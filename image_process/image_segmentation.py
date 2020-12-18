@@ -244,6 +244,18 @@ def in_section(bbox, bbox_lst):
 # 在检测到的点灯区小于95时启动
 def recover_section(first_section, section_lst, width, height,
                     s_height, s_width, period_x, period_y):
+    """
+    对确实区域进行恢复，并对区域进行panel_id标记定位
+    :param first_section:
+    :param section_lst:
+    :param width:
+    :param height:
+    :param s_height:
+    :param s_width:
+    :param period_x:
+    :param period_y:
+    :return:
+    """
     xmin, ymin, _, _, = first_section
     start_x = xmin % period_x
     start_y = ymin % period_y
@@ -405,5 +417,5 @@ if __name__ == '__main__':
     # out_path = r'C:\Users\OPzealot\Desktop\LIGHTER'
     # data_segmentation(img_path, out_path)
 
-    sample_root_ = r'E:\Working\Visionox\V2_lighter\data\11\1106\1106_raw'
+    sample_root_ = r"E:\Working\Visionox\V2_lighter\data\11\1106_test\1106_raw"
     main(sample_root_)

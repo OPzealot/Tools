@@ -11,6 +11,7 @@ author: liusili
 
 import os
 import cv2
+import sys
 import xml.etree.ElementTree as ET
 import numpy as np
 from glob import glob
@@ -93,13 +94,16 @@ def threshold_by_color(img):
     :param img:
     :return:
     """
+    img = cv2.fastNlMeansDenoising(img, h=10, templateWindowSize=7, searchWindowSize=21)
+    img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+    img = np.array(img, dtype='uint8')
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     lower_green = np.array([35, 43, 46])
     upper_green = np.array([80, 255, 255])
     return cv2.inRange(hsv, lower_green, upper_green)
 
 
-def tag_normal_bbox(img_path, category='normal', mode='green'):
+def tag_normal_bbox(img_path, category, mode, padding=5):
     addition = False
     img_raw = cv2.imread(img_path)
     height = img_raw.shape[0]
@@ -107,15 +111,14 @@ def tag_normal_bbox(img_path, category='normal', mode='green'):
     file_name = os.path.splitext(img_path)[0]
     xml_path = file_name + '.xml'
 
-    img = cv2.cvtColor(img_raw, cv2.COLOR_BGR2GRAY)
-    img = cv2.fastNlMeansDenoising(img, h=10, templateWindowSize=7, searchWindowSize=21)
-
-    img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
-    img = np.array(img, dtype='uint8')
-    
     if mode == 'green':
-        mask = threshold_by_color(img)
+        mask = threshold_by_color(img_raw)
     else:
+        img = cv2.cvtColor(img_raw, cv2.COLOR_BGR2GRAY)
+        img = cv2.fastNlMeansDenoising(img, h=10, templateWindowSize=7, searchWindowSize=21)
+
+        img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+        img = np.array(img, dtype='uint8')
         mask = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
     if os.path.isfile(xml_path):
@@ -144,11 +147,11 @@ def tag_normal_bbox(img_path, category='normal', mode='green'):
         if area < 30:
             continue
         bbox = cv2.boundingRect(c)
-        x,y,w,h = bbox
-        new_x = max(0, x-5)
-        new_w = min(w+10, width - new_x)
-        new_y = max(0, y-5)
-        new_h = min(h+10, height - new_y)
+        x, y, w, h = bbox
+        new_x = max(0, x-padding)
+        new_w = min(x+w+padding, width) - new_x
+        new_y = max(0, y-padding)
+        new_h = min(y+h+padding, height) - new_y
         bbox = [new_x, new_y, new_w, new_h]
 
         area_lst.append(area)
@@ -174,16 +177,16 @@ def tag_normal_bbox(img_path, category='normal', mode='green'):
         generate_xml(image_info, category, out_lst)
 
 
-def main(root_path, category):
+def main(root_path, category='normal', mode='green', padding=5):
     img_lst = glob(root_path + '/*/*.jpg')
-    pbar = tqdm(img_lst)
+    pbar = tqdm(img_lst, file=sys.stdout)
     for img_path in pbar:
         tqdm.write('[正在打标] {}'.format(img_path))
-        tag_normal_bbox(img_path, category)
+        tag_normal_bbox(img_path, category, mode=mode, padding=padding)
         pbar.set_description('Processing')
     print('FINISH.')
 
 
 if __name__ == '__main__':
-    root_path = r'C:\Users\OPzealot\Desktop\fmm2'
-    main(root_path, 'normal')
+    root_path = r"D:\Working\Tianma\Mask-FMM\data\12\1214_add"
+    main(root_path, 'normal', mode='green', padding=3)
